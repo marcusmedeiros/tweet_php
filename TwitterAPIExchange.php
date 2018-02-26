@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Twitter-API-PHP : Simple PHP wrapper for the v1.1 API
  *
@@ -17,44 +18,54 @@ class TwitterAPIExchange
      * @var string
      */
     private $oauth_access_token;
+
     /**
      * @var string
      */
     private $oauth_access_token_secret;
+
     /**
      * @var string
      */
     private $consumer_key;
+
     /**
      * @var string
      */
     private $consumer_secret;
+
     /**
      * @var array
      */
     private $postfields;
+
     /**
      * @var string
      */
     private $getfield;
+
     /**
      * @var mixed
      */
     protected $oauth;
+
     /**
      * @var string
      */
     public $url;
+
     /**
      * @var string
      */
     public $requestMethod;
+
     /**
      * The HTTP status code from the previous request
      *
      * @var int
      */
     protected $httpStatusCode;
+
     /**
      * Create the API access object. Requires an array of settings::
      * oauth access token, oauth access token secret, consumer key, consumer secret
@@ -72,6 +83,7 @@ class TwitterAPIExchange
         {
             throw new RuntimeException('TwitterAPIExchange requires cURL extension to be loaded, see: http://curl.haxx.se/docs/install.html');
         }
+
         if (!isset($settings['oauth_access_token'])
             || !isset($settings['oauth_access_token_secret'])
             || !isset($settings['consumer_key'])
@@ -79,11 +91,13 @@ class TwitterAPIExchange
         {
             throw new InvalidArgumentException('Incomplete settings passed to TwitterAPIExchange');
         }
+
         $this->oauth_access_token = $settings['oauth_access_token'];
         $this->oauth_access_token_secret = $settings['oauth_access_token_secret'];
         $this->consumer_key = $settings['consumer_key'];
         $this->consumer_secret = $settings['consumer_secret'];
     }
+
     /**
      * Set postfields array, example: array('screen_name' => 'J7mbo')
      *
@@ -99,10 +113,12 @@ class TwitterAPIExchange
         {
             throw new Exception('You can only choose get OR post fields (post fields include put).');
         }
+
         if (isset($array['status']) && substr($array['status'], 0, 1) === '@')
         {
             $array['status'] = sprintf("\0%s", $array['status']);
         }
+
         foreach ($array as $key => &$value)
         {
             if (is_bool($value))
@@ -110,14 +126,18 @@ class TwitterAPIExchange
                 $value = ($value === true) ? 'true' : 'false';
             }
         }
+
         $this->postfields = $array;
+
         // rebuild oAuth
         if (isset($this->oauth['oauth_signature']))
         {
             $this->buildOauth($this->url, $this->requestMethod);
         }
+
         return $this;
     }
+
     /**
      * Set getfield string, example: '?screen_name=J7mbo'
      *
@@ -133,8 +153,10 @@ class TwitterAPIExchange
         {
             throw new Exception('You can only choose get OR post / post fields.');
         }
+
         $getfields = preg_replace('/^\?/', '', explode('&', $string));
         $params = array();
+
         foreach ($getfields as $field)
         {
             if ($field !== '')
@@ -143,9 +165,12 @@ class TwitterAPIExchange
                 $params[$key] = $value;
             }
         }
+
         $this->getfield = '?' . http_build_query($params, '', '&');
+
         return $this;
     }
+
     /**
      * Get getfield string (simple getter)
      *
@@ -155,6 +180,7 @@ class TwitterAPIExchange
     {
         return $this->getfield;
     }
+
     /**
      * Get postfields array (simple getter)
      *
@@ -164,6 +190,7 @@ class TwitterAPIExchange
     {
         return $this->postfields;
     }
+
     /**
      * Build the Oauth object using params set in construct and additionals
      * passed to this method. For v1.1, see: https://dev.twitter.com/docs/api/1.1
@@ -181,10 +208,12 @@ class TwitterAPIExchange
         {
             throw new Exception('Request method must be either POST, GET or PUT or DELETE');
         }
+
         $consumer_key              = $this->consumer_key;
         $consumer_secret           = $this->consumer_secret;
         $oauth_access_token        = $this->oauth_access_token;
         $oauth_access_token_secret = $this->oauth_access_token_secret;
+
         $oauth = array(
             'oauth_consumer_key' => $consumer_key,
             'oauth_nonce' => time(),
@@ -193,13 +222,17 @@ class TwitterAPIExchange
             'oauth_timestamp' => time(),
             'oauth_version' => '1.0'
         );
+
         $getfield = $this->getGetfield();
+
         if (!is_null($getfield))
         {
             $getfields = str_replace('?', '', explode('&', $getfield));
+
             foreach ($getfields as $g)
             {
                 $split = explode('=', $g);
+
                 /** In case a null is passed through **/
                 if (isset($split[1]))
                 {
@@ -207,21 +240,27 @@ class TwitterAPIExchange
                 }
             }
         }
+
         $postfields = $this->getPostfields();
+
         if (!is_null($postfields)) {
             foreach ($postfields as $key => $value) {
                 $oauth[$key] = $value;
             }
         }
+
         $base_info = $this->buildBaseString($url, $requestMethod, $oauth);
         $composite_key = rawurlencode($consumer_secret) . '&' . rawurlencode($oauth_access_token_secret);
         $oauth_signature = base64_encode(hash_hmac('sha1', $base_info, $composite_key, true));
         $oauth['oauth_signature'] = $oauth_signature;
+
         $this->url           = $url;
         $this->requestMethod = $requestMethod;
         $this->oauth         = $oauth;
+
         return $this;
     }
+
     /**
      * Perform the actual data retrieval from the API
      *
@@ -238,13 +277,17 @@ class TwitterAPIExchange
         {
             throw new Exception('performRequest parameter must be true or false');
         }
+
         $header =  array($this->buildAuthorizationHeader($this->oauth), 'Expect:');
+
         $getfield = $this->getGetfield();
         $postfields = $this->getPostfields();
+
         if (in_array(strtolower($this->requestMethod), array('put', 'delete')))
         {
             $curlOptions[CURLOPT_CUSTOMREQUEST] = $this->requestMethod;
         }
+
         $options = $curlOptions + array(
             CURLOPT_HTTPHEADER => $header,
             CURLOPT_HEADER => false,
@@ -252,6 +295,7 @@ class TwitterAPIExchange
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
         );
+
         if (!is_null($postfields))
         {
             $options[CURLOPT_POSTFIELDS] = http_build_query($postfields, '', '&');
@@ -263,18 +307,25 @@ class TwitterAPIExchange
                 $options[CURLOPT_URL] .= $getfield;
             }
         }
+
         $feed = curl_init();
         curl_setopt_array($feed, $options);
         $json = curl_exec($feed);
+
         $this->httpStatusCode = curl_getinfo($feed, CURLINFO_HTTP_CODE);
+
         if (($error = curl_error($feed)) !== '')
         {
             curl_close($feed);
+
             throw new \Exception($error);
         }
+
         curl_close($feed);
+
         return $json;
     }
+
     /**
      * Private method to generate the base string used by cURL
      *
@@ -288,12 +339,15 @@ class TwitterAPIExchange
     {
         $return = array();
         ksort($params);
+
         foreach($params as $key => $value)
         {
             $return[] = rawurlencode($key) . '=' . rawurlencode($value);
         }
+
         return $method . "&" . rawurlencode($baseURI) . '&' . rawurlencode(implode('&', $return));
     }
+
     /**
      * Private method to generate authorization header used by cURL
      *
@@ -305,6 +359,7 @@ class TwitterAPIExchange
     {
         $return = 'Authorization: OAuth ';
         $values = array();
+
         foreach($oauth as $key => $value)
         {
             if (in_array($key, array('oauth_consumer_key', 'oauth_nonce', 'oauth_signature',
@@ -312,9 +367,11 @@ class TwitterAPIExchange
                 $values[] = "$key=\"" . rawurlencode($value) . "\"";
             }
         }
+
         $return .= implode(', ', $values);
         return $return;
     }
+
     /**
      * Helper method to perform our request
      *
@@ -337,8 +394,10 @@ class TwitterAPIExchange
         {
             $this->setPostfields($data);
         }
+
         return $this->buildOauth($url, $method)->performRequest(true, $curlOptions);
     }
+
     /**
      * Get the HTTP status code for the previous request
      *
