@@ -5,6 +5,7 @@
     "require-dev": {
         "phpunit/phpunit": "~4.5,>=4.5.1"
     },
+    
     "name": "j7mbo/twitter-api-php",
     "description": "Simple PHP Wrapper for Twitter API v1.1 calls",
     "type": "library",
