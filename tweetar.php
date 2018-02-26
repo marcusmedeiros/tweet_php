@@ -6,6 +6,7 @@
 
 //ADICIONA OS ACESSOS CODIGO DE ACESSO DO TWITTER..
 //https://apps.twitter.com/app/
+
   $settings = array(
     'oauth_access_token' => "***",
     'oauth_access_token_secret' => "***",
